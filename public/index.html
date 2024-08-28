@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phone Bill Widget</title>
+  <script src="//unpkg.com/alpinejs" defer></script>
+  <style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #4fd958;
+        color: #333;
+        padding: 20px;
+    }
+
+    h1 {
+        text-align: center;
+        color: #444;
+        margin-bottom: 20px;
+        font-size: 2em;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    h2 {
+        color: #5a0876;
+        font-size: 1.5em;
+        margin-top: 20px;
+    }
+
+    label {
+        font-size: 1em;
+        color: #666;
+        margin-right: 10px;
+    }
+
+    input[type="text"] {
+        padding: 10px;
+        border: 2px solid #0056b3;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 1em;
+        color: #333;
+    }
+
+    input[type="text"]:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    button {
+        background-color: #0056b3;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: #007bff;
+    }
+
+    button:focus {
+        outline: none;
+    }
+
+    ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    li {
+        background-color: #e3e9f1;
+        margin: 5px 0;
+        padding: 10px;
+        border-left: 5px solid #0056b3;
+        border-radius: 5px;
+        transition: background-color 0.3s ease, border-left-color 0.3s ease;
+    }
+
+    li:hover {
+        background-color: #d6dfeb;
+        border-left-color: #6e176f;
+    }
+
+    pre {
+        background-color: #e9ecef;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 1em;
+    }
+</style>
+
+</head>
+<body x-data="phoneBillApp()">
+  <h1>Phone Bill Calculator</h1>
+  
+  <h2>Calculate Bill</h2>
+  <label for="price_plan">Price Plan:</label>
+  <input id="price_plan" x-model="pricePlan" type="text" placeholder="Enter price plan name" />
+  
+  <label for="actions">Actions (comma separated):</label>
+  <input id="actions" x-model="actions" type="text" placeholder="e.g., call, sms, call" />
+  
+  <button @click="calculateBill()">Calculate</button>
+  
+  <h2>Bill Total:</h2>
+  <pre x-text="total !== '' ? total : 'Enter details and calculate to see the result'"></pre>
+
+  <h2>Price Plans</h2>
+  <button @click="loadPricePlans()">Load Price Plans</button>
+  <ul>
+    <template x-for="plan in pricePlans" :key="plan.id">
+      <li x-text="`${plan.plan_name}: SMS ${plan.sms_price}, Call ${plan.call_price}`"></li>
+    </template>
+  </ul>
+  
+  <script>
+    function phoneBillApp() {
+      return {
+        pricePlan: '',
+        actions: '',
+        total: '',
+        pricePlans: [],
+        
+        async calculateBill() {
+          try {
+            const response = await fetch('/api/phonebill/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                price_plan: this.pricePlan,
+                actions: this.actions
+              })
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              this.total = data.total;
+            } else {
+              const errorData = await response.json();
+              this.total = `Error: ${errorData.error}`;
+            }
+          } catch (error) {
+            this.total = 'Error: Failed to fetch data from the server.';
+          }
+        },
+        
+        async loadPricePlans() {
+          try {
+            const response = await fetch('/api/price_plans/');
+            if (response.ok) {
+              this.pricePlans = await response.json();
+            } else {
+              this.pricePlans = [];
+            }
+          } catch (error) {
+            this.pricePlans = [];
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
